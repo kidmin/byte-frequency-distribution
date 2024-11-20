@@ -1,0 +1,11 @@
+[package]
+name = "byte-frequency-distribution"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+# see also .cargo/config.toml
+[profile.release]
+strip = "symbols"
+lto = true
