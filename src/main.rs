@@ -40,6 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut outfh = std::io::BufWriter::new(std::io::stdout().lock());
     if total_bytes == 0 {
         writeln!(outfh, "(input is empty)")?;
+        std::process::exit(1);
     } else {
         let frequency_min = *frequency_table.iter().min().unwrap();
         let frequency_max = *frequency_table.iter().max().unwrap();
