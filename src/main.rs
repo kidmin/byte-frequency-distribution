@@ -12,7 +12,14 @@ fn read_file_content<T: std::io::Read>(infh: &mut T) -> Result<(Box<ByteFrequenc
 
     let mut read_buffer = vec![0_u8; 1_048_576];
     loop {
-        let bytes_read = infh.read(&mut read_buffer)?;
+        let (bytes_read, should_retry) = match infh.read(&mut read_buffer) {
+            Ok(bytes_read) => (bytes_read, false),
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => (0, true),
+            Err(e) => return Err(e),
+        };
+        if should_retry {
+            continue;
+        }
         if bytes_read == 0 {
             break;
         }
@@ -59,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let percentage_max = frequency_max as f64 / total_bytes as f64 * 100.0;
 
     let mut outfh = std::io::BufWriter::new(std::io::stdout().lock());
-    writeln!(outfh, "(range: {:.2}% - {:.2}%, distribution {:.2}pt.)", percentage_min, percentage_max, percentage_max - percentage_min)?;
+    writeln!(outfh, "(range: {:.2}% - {:.2}%, distribution: {:.2}pt.)", percentage_min, percentage_max, percentage_max - percentage_min)?;
     for b in 0x00_usize..=0xff_usize {
         let frequency = frequency_table[b] as f64 / total_bytes as f64;
         let bar_length = (SCREEN_COLUMNS as f64 * frequency * percentage_normalizer) as usize;
