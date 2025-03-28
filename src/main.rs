@@ -23,9 +23,9 @@ fn read_file_content<T: std::io::Read>(infh: &mut T) -> Result<(Box<ByteFrequenc
         if bytes_read == 0 {
             break;
         }
-        total_bytes += bytes_read as u64;
-        for b in &read_buffer[0..bytes_read] {
-            frequency_table[*b as usize] += 1;
+        total_bytes = total_bytes.checked_add(bytes_read.try_into().unwrap()).ok_or(std::io::Error::from(std::io::ErrorKind::FileTooLarge))?;
+        for &b in read_buffer[0..bytes_read].iter() {
+            frequency_table[usize::from(b)] += 1;
         }
     }
 
