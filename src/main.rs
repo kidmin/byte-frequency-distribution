@@ -12,18 +12,15 @@ fn read_file_content<T: std::io::Read>(infh: &mut T) -> Result<(Box<ByteFrequenc
 
     let mut read_buffer = vec![0_u8; 1_048_576];
     loop {
-        let (bytes_read, should_retry) = match infh.read(&mut read_buffer) {
-            Ok(bytes_read) => (bytes_read, false),
-            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => (0, true),
+        let bytes_read = match infh.read(&mut read_buffer) {
+            Ok(0usize) => break,
+            Ok(bytes_read) => bytes_read,
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => continue,
             Err(e) => return Err(e),
         };
-        if should_retry {
-            continue;
-        }
-        if bytes_read == 0 {
-            break;
-        }
-        total_bytes = total_bytes.checked_add(bytes_read.try_into().unwrap()).ok_or(std::io::Error::from(std::io::ErrorKind::FileTooLarge))?;
+        total_bytes = total_bytes
+            .checked_add(bytes_read.try_into().unwrap())
+            .ok_or(std::io::Error::from(std::io::ErrorKind::FileTooLarge))?;
         for &b in read_buffer[0..bytes_read].iter() {
             frequency_table[usize::from(b)] += 1;
         }
